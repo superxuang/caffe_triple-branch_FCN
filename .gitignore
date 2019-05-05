@@ -63,6 +63,7 @@ Makefile.config
 data/*
 models/*
 !models/triple-branch_FCN
+!models/triple-branch_FCN/snapshot
 *.caffemodel
 *.caffemodel.h5
 *.solverstate
