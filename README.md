@@ -1,90 +1,124 @@
-This branch of Caffe extends [BVLC-led Caffe](https://github.com/BVLC/caffe) by adding Windows support and other functionalities commonly used by Microsoft's researchers, such as managed-code wrapper, [Faster-RCNN](https://papers.nips.cc/paper/5638-faster-r-cnn-towards-real-time-object-detection-with-region-proposal-networks.pdf), [R-FCN](https://arxiv.org/pdf/1605.06409v2.pdf), etc.
+# Caffe with 3D Faster R-CNN
+This is a modified version of [Caffe](https://github.com/BVLC/caffe) which supports the **3D Triple-branch Fully Convolutional Networks** as described in our paper [**Multiple Organ Localization in CT Image using Anisotropic Triple-branch Fully Convolutional Networks**](Under review).
 
-**Update**: this branch is not actively maintained. Please checkout [this](https://github.com/BVLC/caffe/tree/windows) for more active Windows support.
+<img src="./workflow.png"/>
 
----
+This code has been compiled and passed on `Windows 7 (64 bits)` using `Visual Studio 2013`.
 
-# Caffe
+## How to build
 
-|  **`Linux (CPU)`**   |  **`Windows (CPU)`** |
-|-------------------|----------------------|
-| [![Travis Build Status](https://api.travis-ci.org/Microsoft/caffe.svg?branch=master)](https://travis-ci.org/Microsoft/caffe) | [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/6x4l911frv07lj1w/branch/master?svg=true)](https://ci.appveyor.com/project/zer0n/caffe) |              
-
-[![License](https://img.shields.io/badge/license-BSD-blue.svg)](LICENSE)
-
-Caffe is a deep learning framework made with expression, speed, and modularity in mind.
-It is developed by the Berkeley Vision and Learning Center ([BVLC](http://bvlc.eecs.berkeley.edu)) and community contributors.
-
-Check out the [project site](http://caffe.berkeleyvision.org) for all the details like
-
-- [DIY Deep Learning for Vision with Caffe](https://docs.google.com/presentation/d/1UeKXVgRvvxg9OUdh_UiC5G71UMscNPlvArsWER41PsU/edit#slide=id.p)
-- [Tutorial Documentation](http://caffe.berkeleyvision.org/tutorial/)
-- [BVLC reference models](http://caffe.berkeleyvision.org/model_zoo.html) and the [community model zoo](https://github.com/BVLC/caffe/wiki/Model-Zoo)
-- [Installation instructions](http://caffe.berkeleyvision.org/installation.html)
-
-and step-by-step examples.
-
-## Windows Setup
-**Requirements**: Visual Studio 2013
+**Requirements**: `Visual Studio 2013`, `ITK-4.10`, `CUDA 8.0` and `cuDNN v5`
 
 ### Pre-Build Steps
-Copy `.\windows\CommonSettings.props.example` to `.\windows\CommonSettings.props`
+Please make sure CUDA and cuDNN have been installed correctly on your computer.
 
-By defaults Windows build requires `CUDA` and `cuDNN` libraries.
-Both can be disabled by adjusting build variables in `.\windows\CommonSettings.props`.
-Python support is disabled by default, but can be enabled via `.\windows\CommonSettings.props` as well.
-3rd party dependencies required by Caffe are automatically resolved via NuGet.
-
-### CUDA
-Download `CUDA Toolkit 7.5` [from nVidia website](https://developer.nvidia.com/cuda-toolkit).
-If you don't have CUDA installed, you can experiment with CPU_ONLY build.
-In `.\windows\CommonSettings.props` set `CpuOnlyBuild` to `true` and set `UseCuDNN` to `false`.
-
-### cuDNN
-Download `cuDNN v4` or `cuDNN v5` [from nVidia website](https://developer.nvidia.com/cudnn).
-Unpack downloaded zip to %CUDA_PATH% (environment variable set by CUDA installer).
-Alternatively, you can unpack zip to any location and set `CuDnnPath` to point to this location in `.\windows\CommonSettings.props`.
-`CuDnnPath` defined in `.\windows\CommonSettings.props`.
-Also, you can disable cuDNN by setting `UseCuDNN` to `false` in the property file.
-
-### Python
-To build Caffe Python wrapper set `PythonSupport` to `true` in `.\windows\CommonSettings.props`.
-Download Miniconda 2.7 64-bit Windows installer [from Miniconda website] (http://conda.pydata.org/miniconda.html).
-Install for all users and add Python to PATH (through installer).
-
-Run the following commands from elevated command prompt:
-
+Clone the project by running:
 ```
-conda install --yes numpy scipy matplotlib scikit-image pip
-pip install protobuf
+git clone https://github.com/superxuang/caffe_3d_faster_rcnn.git
 ```
 
-#### Remark
-After you have built solution with Python support, in order to use it you have to either:  
-* set `PythonPath` environment variable to point to `<caffe_root>\Build\x64\Release\pycaffe`, or
-* copy folder `<caffe_root>\Build\x64\Release\pycaffe\caffe` under `<python_root>\lib\site-packages`.
-
-### Matlab
-To build Caffe Matlab wrapper set `MatlabSupport` to `true` and `MatlabDir` to the root of your Matlab installation in `.\windows\CommonSettings.props`.
-
-#### Remark
-After you have built solution with Matlab support, in order to use it you have to:
-* add the generated `matcaffe` folder to Matlab search path, and
-* add `<caffe_root>\Build\x64\Release` to your system path.
+In `.\Caffe.bat` set `ITK_PATH` to ITK intall path (the path containing ITK `include`,`lib` folders).
 
 ### Build
-Now, you should be able to build `.\windows\Caffe.sln`
+Run `.\Caffe.bat` and build the project `caffe` in `Visual Studio 2013`.
+
+## How to use
+### Download image data
+Please download and unzip the CT images from [LiTS challenge](https://competitions.codalab.org/competitions/17094). Note that, the original CT images of LiTS dataset are stored in `*.nii` format. Please convert them to `*.mhd` format.
+
+### Download annotation data
+The organ bounding-box annotations could be downloaded from [this repository](./annotations_on_LiTS/) or [IEEE DataPort](http://dx.doi.org/10.21227/df8g-pq27).
+
+### Prepare data
+Move the CT images and the bounding-box annotations to a data folder, and create an entry list file (`_train_set_list.txt`) in the same folder. To this end, the data folder is organized in the folloing way:
+
+```
+└── data folder
+    ├── _train_set_list.txt
+    ├── volume-0.mhd
+    ├── volume-0.raw
+    ├── segmentation-0.mhd
+    ├── segmentation-0.raw
+    ├── segmentation-0.txt
+    ├── volume-1.mhd
+    ├── volume-1.raw
+    ├── segmentation-1.mhd
+    ├── segmentation-1.raw
+    ├── segmentation-1.txt
+    |   ....................... 
+    ├── volume-130.mhd
+    ├── volume-130.raw
+    ├── segmentation-130.mhd
+    ├── segmentation-130.raw
+    └── segmentation-130.txt
+```
+
+The entry list file `_train_set_list.txt` stores the filenames that are actually used for training. Each line of the entry list file corresponds a data sample. Here is an example of the entry list file `_train_set_list.txt` corresponding to above data folder. **Note that, the segmentation mask file (`segmentation-N.mhd` and `segmentation-N.raw`) is not necessary for neither training nor testing. We just reserve it for further research (e.g. organ segmentation). You could just make the segmentation mask files absent and fill the second column of the entry list file with a non-existent filename.**  
+
+```
+volume-0.mhd segmentation-0.mhd segmentation-0.txt
+volume-1.mhd segmentation-1.mhd segmentation-1.txt
+.......................
+volume-130.mhd segmentation-130.mhd segmentation-130.txt
+```
+
+### Start the training
+Modify the path parameter of datalayer in `.\models\triple-branch_FCN\net.prototxt`.
+```
+layer {
+  name: "mhd_input"
+  type: "MHDRoiData"
+  top: "data"
+  top: "im_info"
+  top: "label_a"
+  top: "label_c"
+  top: "label_s"
+  mhd_data_param {  
+    source: "F:/Deep/MyDataset/LITS/_train_set_list.txt" # the entry list file mentioned above  
+    root_folder: "F:/Deep/MyDataset/LITS/" # the data folder mentioned above
+    batch_size: 3
+    shuffle: true
+    hist_matching: false
+    truncate_probability: 0.5
+    min_truncate_length: 128
+    inplane_shift: 5
+    min_intensity: -1000
+    max_intensity: 1600
+    random_deform: 0.0
+    deform_control_point: 2
+    deform_sigma: 15.0
+    contour_name_list {
+      name: "liver"
+      name: "lung-r"
+      name: "lung-l"
+      name: "kidney-r"
+      name: "kidney-l"
+      name: "femur-r"
+      name: "femur-l"
+      name: "bladder"
+      name: "heart"
+      name: "spleen"
+      name: "pancreas"
+    }
+    resample_size_x: 256
+    resample_size_y: 256
+    resample_size_z: 512
+  }
+  include: { phase: TRAIN }
+}
+```
+Run `.\models\triple-branch_FCN\train.bat`
 
 ## License and Citation
 
-Caffe is released under the [BSD 2-Clause license](https://github.com/BVLC/caffe/blob/master/LICENSE).
-The BVLC reference models are released for unrestricted use.
-
-Please cite Caffe in your publications if it helps your research:
+Please cite our paper and Caffe if it is useful for your research:
 
     @article{jia2014caffe,
-      Author = {Jia, Yangqing and Shelhamer, Evan and Donahue, Jeff and Karayev, Sergey and Long, Jonathan and Girshick, Ross and Guadarrama, Sergio and Darrell, Trevor},
-      Journal = {arXiv preprint arXiv:1408.5093},
-      Title = {Caffe: Convolutional Architecture for Fast Feature Embedding},
-      Year = {2014}
+      author = {Jia, Yangqing and Shelhamer, Evan and Donahue, Jeff and Karayev, Sergey and Long, Jonathan and Girshick, Ross and Guadarrama, Sergio and Darrell, Trevor},
+      journal = {arXiv preprint arXiv:1408.5093},
+      title = {Caffe: Convolutional Architecture for Fast Feature Embedding},
+      year = {2014}
     }
+    
+Caffe is released under the [BSD 2-Clause license](https://github.com/BVLC/caffe/blob/master/LICENSE).
+The BVLC reference models are released for unrestricted use.
