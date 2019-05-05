@@ -1,4 +1,4 @@
-# Caffe with 3D Faster R-CNN
+# Triple-branch Fully Convolutional Networks for Organ Localization in CT image
 This is a modified version of [Caffe](https://github.com/BVLC/caffe) which supports the **3D Triple-branch Fully Convolutional Networks** as described in our paper [**Multiple Organ Localization in CT Image using Anisotropic Triple-branch Fully Convolutional Networks**](Under review).
 
 <img src="./workflow.png"/>
