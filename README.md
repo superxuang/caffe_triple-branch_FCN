@@ -14,7 +14,7 @@ Please make sure CUDA and cuDNN have been installed correctly on your computer.
 
 Clone the project by running:
 ```
-git clone https://github.com/superxuang/caffe_3d_faster_rcnn.git
+git clone https://github.com/superxuang/caffe_triple-branch_FCN.git
 ```
 
 In `.\Caffe.bat` set `ITK_PATH` to ITK intall path (the path containing ITK `include`,`lib` folders).
