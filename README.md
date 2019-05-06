@@ -111,7 +111,7 @@ Run `.\models\triple-branch_FCN\train.bat`
 
 ## License and Citation
 
-Please cite our paper and Caffe if it is useful for your research:
+Please cite Caffe if it is useful for your research:
 
     @article{jia2014caffe,
       author = {Jia, Yangqing and Shelhamer, Evan and Donahue, Jeff and Karayev, Sergey and Long, Jonathan and Girshick, Ross and Guadarrama, Sergio and Darrell, Trevor},
