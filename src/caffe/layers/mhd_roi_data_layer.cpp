@@ -3,6 +3,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <ctime>
 
 #include "caffe/data_transformer.hpp"
 #include "caffe/layers/base_data_layer.hpp"
@@ -21,6 +22,9 @@
 #include <itkHistogramMatchingImageFilter.h>
 #include <itkNearestNeighborInterpolateImageFunction.h>
 #include <itkSobelEdgeDetectionImageFilter.h>
+#include <itkCannyEdgeDetectionImageFilter.h>
+#include <itkLaplacianRecursiveGaussianImageFilter.h>
+#include <itkBSplineInterpolateImageFunction.h>
 
 using std::floor;
 
@@ -44,6 +48,7 @@ void MHDRoiDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
 	itk::ObjectFactoryBase::RegisterFactory(itk::MetaImageIOFactory::New());
 	typedef itk::ImageFileReader<ImageType> ImageReaderType;
 	typedef itk::ImageFileReader<LabelType> LabelReaderType;
+	typedef itk::ImageFileWriter<LabelType> LabelWriterType;
 
 	const MHDDataParameter& mhd_data_param = this->layer_param_.mhd_data_param();
 	fixed_spacing_ = 
@@ -60,6 +65,8 @@ void MHDRoiDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
 	string line;
 	size_t pos1, pos2;
 	int file_num = 0;
+	clock_t start_time, end_time;
+	float preprocessing_time = 0.f;
 	while (std::getline(infile, line)) {
 		LOG(INFO) << "Loading file " << file_num++ << "...";
 		pos1 = line.find_first_of(' ');
@@ -153,6 +160,46 @@ void MHDRoiDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
 			ImageType::Pointer image = reader_image->GetOutput();
 			image->SetDirection(direct_src);
 
+			//{
+			//	LabelType::Pointer box_mask = LabelType::New();
+			//	box_mask->SetOrigin(image->GetOrigin());
+			//	box_mask->SetSpacing(image->GetSpacing());
+			//	box_mask->SetRegions(image->GetBufferedRegion());
+			//	box_mask->SetDirection(image->GetDirection());
+			//	box_mask->Allocate();
+			//	const int width = image->GetBufferedRegion().GetSize()[0];
+			//	const int height = image->GetBufferedRegion().GetSize()[1];
+			//	const int length = image->GetBufferedRegion().GetSize()[2];
+			//	char* mask_buffer = box_mask->GetBufferPointer();
+			//	memset(mask_buffer, 0, sizeof(char) * width * height * length);
+			//	for (int box_id = 0; box_id < image_record->roi_x0_.size(); ++box_id)
+			//	{
+			//		const int x0 = image_record->roi_x0_[box_id];
+			//		const int x1 = image_record->roi_x1_[box_id];
+			//		const int y0 = image_record->roi_y0_[box_id];
+			//		const int y1 = image_record->roi_y1_[box_id];
+			//		const int z0 = image_record->roi_z0_[box_id];
+			//		const int z1 = image_record->roi_z1_[box_id];
+			//		for (int z = z0; z <= z1; ++z)
+			//		{
+			//			for (int y = y0; y <= y1; ++y)
+			//			{
+			//				for (int x = x0; x <= x1; ++x)
+			//				{
+			//					const int ind = (z * height + y) * width + x;
+			//					mask_buffer[ind] = 1;
+			//				}
+			//			}
+			//		}
+			//	}
+
+			//	LabelWriterType::Pointer writer = LabelWriterType::New();
+			//	writer->SetInput(box_mask);
+			//	writer->SetFileName("F:/box_mask/" + image_file_name);
+			//	writer->Update();
+			//}
+
+			start_time = std::clock();
 			// resample
 			{
 				const ImageType::SizeType& origin_size = image->GetBufferedRegion().GetSize();
@@ -210,7 +257,11 @@ void MHDRoiDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
 				typedef itk::IdentityTransform<double, 3> IdentityTransformType;
 				typedef itk::ResampleImageFilter<ImageType, ImageType> ResampleImageFilterType;
 				typedef itk::ResampleImageFilter<LabelType, LabelType> ResampleLabelFilterType;
-				typedef itk::NearestNeighborInterpolateImageFunction<LabelType, double> InterpolatorType;
+
+				//typedef itk::NearestNeighborInterpolateImageFunction<ImageType, double> InterpolatorType;
+				//typedef itk::BSplineInterpolateImageFunction<ImageType, double> BCInterpolatorType;
+				//BCInterpolatorType::Pointer bc_interpolator = BCInterpolatorType::New();
+				//bc_interpolator->SetSplineOrder(3);
 
 				ResampleImageFilterType::Pointer resampler_image = ResampleImageFilterType::New();
 				resampler_image->SetInput(image);
@@ -218,6 +269,15 @@ void MHDRoiDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
 				resampler_image->SetOutputSpacing(resample_spacing);
 				resampler_image->SetOutputOrigin(resample_origin);
 				resampler_image->SetTransform(IdentityTransformType::New());
+#if INTERPOLATION_ALGORITM == NEAREST_INTERPOLATION
+				typedef itk::NearestNeighborInterpolateImageFunction<ImageType, double> InterpolatorType;
+				resampler_image->SetInterpolator(InterpolatorType::New());
+#elif INTERPOLATION_ALGORITM == BICUBIC_INTERPOLATION
+				typedef itk::BSplineInterpolateImageFunction<ImageType, double> BCInterpolatorType;
+				BCInterpolatorType::Pointer interpolator = BCInterpolatorType::New();
+				interpolator->SetSplineOrder(3);
+				resampler_image->SetInterpolator(interpolator);
+#endif
 				resampler_image->SetDefaultPixelValue(-2000);
 				resampler_image->Update();
 				image = resampler_image->GetOutput();
@@ -257,18 +317,53 @@ void MHDRoiDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
 			}
 
 			// edge image
+#if GRADIENT_OPERATOR == CANNY_OPERATOR
+			typedef itk::CannyEdgeDetectionImageFilter<ImageType, ImageType> EdgeFilterType;
+#elif GRADIENT_OPERATOR == LOG_OPERATOR
+			typedef itk::LaplacianRecursiveGaussianImageFilter<ImageType, ImageType> EdgeFilterType;
+#else GRADIENT_OPERATOR == SOBEL_OPERATOR
 			typedef itk::SobelEdgeDetectionImageFilter<ImageType, ImageType> EdgeFilterType;
-			EdgeFilterType::Pointer sobelFilter = EdgeFilterType::New();
-			sobelFilter->SetInput(enhanced_image);
-			sobelFilter->Update();
-			ImageType::Pointer edge_image = sobelFilter->GetOutput();
+#endif
+			EdgeFilterType::Pointer edge_filter = EdgeFilterType::New();
+			edge_filter->SetInput(enhanced_image);
+#if GRADIENT_OPERATOR == CANNY_OPERATOR
+			edge_filter->SetVariance(1.0);
+			edge_filter->SetLowerThreshold(0.1);
+			edge_filter->SetUpperThreshold(0.5);
+			edge_filter->SetMaximumError(0.1);
+#endif
+			edge_filter->Update();
+			ImageType::Pointer edge_image = edge_filter->GetOutput();
 			Dtype* edge_image_buffer = edge_image->GetBufferPointer();
+#if GRADIENT_OPERATOR == SOBEL_OPERATOR
 			for (int i = 0; i < image_buffer_length; ++i)
 			{
 				Dtype v = edge_image_buffer[i] / 10.0;
 				edge_image_buffer[i] = (v > 1.0) ? 1.0 : v;
 			}
 #endif
+#if GRADIENT_OPERATOR == LOG_OPERATOR
+			for (int i = 0; i < image_buffer_length; ++i)
+			{
+				Dtype v = fabs(edge_image_buffer[i]) * 5.0;
+				edge_image_buffer[i] = (v > 1.0) ? 1.0 : v;
+			}
+#endif
+#endif
+			end_time = std::clock();
+			preprocessing_time += (float)(end_time - start_time) / CLOCKS_PER_SEC;
+
+			//typedef itk::ImageFileWriter<ImageType> ImageWriterType;
+			//ImageWriterType::Pointer writer = ImageWriterType::New();
+			//writer->SetInput(image);
+			//writer->SetFileName("F:/orginal_CT.mhd");
+			//writer->Update();
+			//writer->SetInput(enhanced_image);
+			//writer->SetFileName("F:/density_map.mhd");
+			//writer->Update();
+			//writer->SetInput(edge_image);
+			//writer->SetFileName("F:/gradient_map.mhd");
+			//writer->Update();
 
 			image_record->image_ = image;
 #ifdef USE_MULTI_CHANNEL
@@ -295,6 +390,7 @@ void MHDRoiDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
 		}
 	}
 	LOG(INFO) << "A total of " << lines_.size() << " images.";
+	LOG(INFO) << "Average time cost for preprocessing: " << preprocessing_time / lines_.size() * 1000 << "ms";
 
 	lines_id_ = 0;
 	// Check if we would need to randomly skip a few data points
@@ -373,7 +469,7 @@ void MHDRoiDataLayer<Dtype>::load_batch(RoiBatch<Dtype>* batch) {
 	typedef itk::HistogramMatchingImageFilter<ImageType, ImageType> HMFilterType;
 	typedef itk::ResampleImageFilter<ImageType, ImageType> ResampleImageFilterType;
 	typedef itk::ResampleImageFilter<LabelType, LabelType> ResampleLabelFilterType;
-	typedef itk::NearestNeighborInterpolateImageFunction<LabelType, double> InterpolatorType;
+	typedef itk::NearestNeighborInterpolateImageFunction<ImageType, double> InterpolatorType;
 
 	const MHDDataParameter& mhd_data_param = this->layer_param_.mhd_data_param();
 	const ContourNameList& contour_name_list = mhd_data_param.contour_name_list();
@@ -497,7 +593,7 @@ void MHDRoiDataLayer<Dtype>::load_batch(RoiBatch<Dtype>* batch) {
 		typedef itk::IdentityTransform<double, 3> IdentityTransformType;
 		typedef itk::ResampleImageFilter<ImageType, ImageType> ResampleImageFilterType;
 		typedef itk::ResampleImageFilter<LabelType, LabelType> ResampleLabelFilterType;
-		typedef itk::NearestNeighborInterpolateImageFunction<LabelType, double> InterpolatorType;	
+		typedef itk::NearestNeighborInterpolateImageFunction<ImageType, double> InterpolatorType;
 
 		//ImageWriterType::Pointer writer = ImageWriterType::New();
 		//writer->SetInput(src_image);
