@@ -110,3 +110,12 @@ MANIFEST-*
 *.pdb
 *.props
 !windows/CommonSettings.props
+
+cmake
+data
+docker
+docs
+examples
+matlab
+python
+scripts
