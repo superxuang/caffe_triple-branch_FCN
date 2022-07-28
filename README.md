@@ -1,9 +1,32 @@
-# Triple-branch Fully Convolutional Networks for Organ Localization in CT image
-This is a modified version of [Caffe](https://github.com/BVLC/caffe) which supports the **3D Triple-branch Fully Convolutional Networks** as described in our paper [**Multiple Organ Localization in CT Image using Anisotropic Triple-branch Fully Convolutional Networks**] (under review).
+# Triple-Branch FCN for Multiple Organ Localization in CT Images
 
+This is a C++ ([Caffe](https://github.com/BVLC/caffe)) implementation of **Triple-Branch Fully Convolutional Networks** method for multiple organ localization in computed tomography (CT) images proposed in our ***IEEE Access*** journal paper [**"Multiple Organ Localization in CT Image Using Triple-Branch Fully Convolutional Networks"**](https://doi.org/10.1109/ACCESS.2019.2930417).
+
+The code has been compiled and passed on `Windows 7 (64 bits)` using `Visual Studio 2013`.
+
+## Citation
+  *X. Xu, F. Zhou, B. Liu and X. Bai, "Multiple Organ Localization in CT Image Using Triple-Branch Fully Convolutional Networks," in IEEE Access, vol. 7, pp. 98083-98093, July 2019, doi: 10.1109/ACCESS.2019.2930417.*
+
+    @article{Xu2019TBFCN,
+      title={Multiple Organ Localization in CT Image Using Triple-Branch Fully Convolutional Networks}, 
+      author={Xu, Xuanang and Zhou, Fugen and Bo, Liu and Bai, Xiangzhi},
+      journal={IEEE Access}, 
+      year={2019},
+      volume={7},
+      pages={98083-98093},
+      publisher={IEEE},
+      doi={10.1109/ACCESS.2019.2930417}
+    }
+
+## Abstract
+Organ localization is an essential prerequisite for many computed tomography (CT) image analysis tasks such as organ segmentation, lesion detection, and image registration. However, it is a challenging problem due to various causes such as the low-contrast organ boundaries, the large variations of organ appearance, the truncated organs, and the abnormalities. In this work, we propose an automatic method for multiple organ localization in CT image using a novel triple-branch fully convolutional network (FCN). First, the input CT image is extended to a three-channel image that contains both the original image and the enhanced organ structures using a density enhancement filter. Then, the extended three-channel image is fed to a 3D triple-branch FCN to parallelly predict the organs' presence probability curves along axial, coronal and sagittal directions. Finally, the bounding boxes of the target organs are computed based on these presence probability curves. The triple-branch FCN is fully implemented in 3D manner, thus it can take full advantage of the spatial context information in CT image to perform accurate organ localization. Only several basic convolutional neural networks (ConvNet) operations (such as convolution, pooling and softmax regression) are involved in this triple-branch FCN, thus it is easy-implemented and flexible to serve as a preprocessing module in other medical image analysis tasks. By enhancing the structural information in the CT image using the density enhancement filter, the performance of the triple-branch FCN can be further improved. The proposed method is evaluated on a challenging public dataset with 201 clinical abdominal/torso CT images to locate 11 body organs. As the experimental results showed, the proposed method achieves higher localization accuracy than the current state-of-the-art methods.
+
+## Method
+### Scheme of Triple-Branch FCN
 <img src="./workflow.png"/>
 
-This code has been compiled and passed on `Windows 7 (64 bits)` using `Visual Studio 2013`.
+### Scheme of Three-Channel Image Generation
+<img src="./multi-channel.png"/>
 
 ## How to build
 
@@ -109,16 +132,6 @@ layer {
 ```
 Run `.\models\triple-branch_FCN\train.bat`
 
-## License and Citation
-
-Please cite Caffe if it is useful for your research:
-
-    @article{jia2014caffe,
-      author = {Jia, Yangqing and Shelhamer, Evan and Donahue, Jeff and Karayev, Sergey and Long, Jonathan and Girshick, Ross and Guadarrama, Sergio and Darrell, Trevor},
-      journal = {arXiv preprint arXiv:1408.5093},
-      title = {Caffe: Convolutional Architecture for Fast Feature Embedding},
-      year = {2014}
-    }
-    
-Caffe is released under the [BSD 2-Clause license](https://github.com/BVLC/caffe/blob/master/LICENSE).
-The BVLC reference models are released for unrestricted use.
+## Contact
+You are welcome to contact us:  
+  - [superxuang@gmail.com](mailto:superxuang@gmail.com)(Dr. Xuanang Xu)
