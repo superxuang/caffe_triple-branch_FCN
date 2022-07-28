@@ -5,16 +5,16 @@ This is a C++ ([Caffe](https://github.com/BVLC/caffe)) implementation of **Tripl
 The code has been compiled and passed on `Windows 7 (64 bits)` using `Visual Studio 2013`.
 
 ## Citation
-  *X. Xu, F. Zhou, B. Liu and X. Bai, "Multiple Organ Localization in CT Image Using Triple-Branch Fully Convolutional Networks," in IEEE Access, vol. 7, pp. 98083-98093, July 2019, doi: 10.1109/ACCESS.2019.2930417.*
+  *X. Xu, F. Zhou, B. Liu and X. Bai, "Multiple Organ Localization in CT Image Using Triple-Branch Fully Convolutional Networks," in IEEE Access, vol. 7, pp. 98083-98093, 2019, doi: 10.1109/ACCESS.2019.2930417.*
 
     @article{Xu2019TBFCN,
       title={Multiple Organ Localization in CT Image Using Triple-Branch Fully Convolutional Networks}, 
-      author={Xu, Xuanang and Zhou, Fugen and Bo, Liu and Bai, Xiangzhi},
+      author={Xu, Xuanang and Zhou, Fugen and Liu, Bo and Bai, Xiangzhi},
       journal={IEEE Access}, 
       year={2019},
       volume={7},
+      number={},
       pages={98083-98093},
-      publisher={IEEE},
       doi={10.1109/ACCESS.2019.2930417}
     }
 
