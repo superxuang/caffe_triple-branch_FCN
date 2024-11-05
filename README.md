@@ -134,4 +134,4 @@ Run `.\models\triple-branch_FCN\train.bat`
 
 ## Contact
 You are welcome to contact us:  
-  - [superxuang@gmail.com](mailto:superxuang@gmail.com)(Dr. Xuanang Xu)
+  - [superxuang@gmail.com](mailto:superxuang@gmail.com) ([Dr. Xuanang Xu](https://superxuang.github.io/))
